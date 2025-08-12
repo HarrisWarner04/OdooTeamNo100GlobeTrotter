@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GlobeTrotter AI</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React and ReactDOM for UI rendering -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    
+    <!-- Babel to transpile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Custom animations from the original project */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.5s ease-out forwards;
+        }
+        /* Custom scrollbar for a better look in dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // All your React components and logic are placed here.
+        // We use type="text/babel" so the browser's Babel transpiler can process the JSX.
+
+        const { useState, useEffect, useCallback, useMemo, useRef, cloneElement } = React;
+
+        // --- SVG Icons ---
+        const icons = {
+            TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>,
+            Calendar: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>,
+            Users: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>,
+            Shield: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>,
+            LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>,
+            Sun: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>,
+            Moon: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>,
+            MapPin: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>,
+            Rupee: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 8.5a4 4 0 1 0-8 0"/><path d="M6.5 14H18"/><path d="M6 18h12"/></svg>,
+            Clock: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>,
+            CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>,
+            XCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>,
+            ChevronLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
+            ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>,
+            Star: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>,
+            Filter: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+            UserPlus: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="17" y1="11" x2="23" y2="11"></line></svg>,
+            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>,
+            Settings: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>,
+            Trash2: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
+        };
+
+        // --- MOCK API with localStorage (ENHANCED) ---
+        const mockApi = {
+          // --- User Management ---
+          async signup(firstName, lastName, email, password) {
+            return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                const users = JSON.parse(localStorage.getItem('globetrotter_users')) || [];
+                if (users.find(user => user.email === email)) {
+                  reject(new Error("User with this email already exists."));
+                } else {
+                  const newUser = { id: `user_${Date.now()}`, firstName, lastName, email, password, preferences: null, language: 'en', photoUrl: null, createdAt: new Date().toISOString() };
+                  users.push(newUser);
+                  localStorage.setItem('globetrotter_users', JSON.stringify(users));
+                  resolve(newUser);
+                }
+              }, 500);
+            });
+          },
+          async login(email, password) {
+            return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                const users = JSON.parse(localStorage.getItem('globetrotter_users')) || [];
+                const user = users.find(u => u.email === email && u.password === password);
+                if (user) {
+                  resolve(user);
+                } else {
+                  reject(new Error("Invalid email or password."));
+                }
+              }, 500);
+            });
+          },
+          async updateUserProfile(userId, profileData) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    let users = JSON.parse(localStorage.getItem('globetrotter_users')) || [];
+                    const userIndex = users.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        users[userIndex] = { ...users[userIndex], ...profileData };
+                        localStorage.setItem('globetrotter_users', JSON.stringify(users));
+                        resolve(users[userIndex]);
+                    } else {
+                        reject(new Error("User not found."));
+                    }
+                }, 500);
+            });
+          },
+          async deleteUserAccount(userId) {
+              return new Promise((resolve) => {
+                  setTimeout(() => {
+                      let users = JSON.parse(localStorage.getItem('globetrotter_users')) || [];
+                      users = users.filter(u => u.id !== userId);
+                      localStorage.setItem('globetrotter_users', JSON.stringify(users));
+                      // In a real app, you'd also delete all user-associated data.
+                      resolve({ success: true });
+                  }, 1000);
+              });
+          },
+          // --- Itinerary & Activity Management ---
+          async saveItinerary(userId, itineraryData, isPublic) {
+            return new Promise((resolve) => {
+              setTimeout(() => {
+                const userItinerariesKey = `globetrotter_itineraries_${userId}`;
+                const userItineraries = JSON.parse(localStorage.getItem(userItinerariesKey)) || [];
+                
+                // Ensure itinerary has an ID, or assign one.
+                const itineraryId = itineraryData.id || `trip_${Date.now()}`;
+                const newItinerary = { 
+                    ...itineraryData,
+                    id: itineraryId,
+                    ownerId: userId,
+                    isPublic, 
+                    status: isPublic ? 'pending' : 'private',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                const existingIndex = userItineraries.findIndex(trip => trip.id === itineraryId);
+                if (existingIndex !== -1) {
+                    userItineraries[existingIndex] = newItinerary;
+                } else {
+                    userItineraries.push(newItinerary);
+                }
+
+                localStorage.setItem(userItinerariesKey, JSON.stringify(userItineraries));
+
+                if (isPublic) {
+                    const publicItineraries = JSON.parse(localStorage.getItem('globetrotter_public_itineraries')) || [];
+                    const existingPublicIndex = publicItineraries.findIndex(trip => trip.id === itineraryId);
+                    if (existingPublicIndex !== -1) {
+                        publicItineraries[existingPublicIndex] = newItinerary;
+                    } else {
+                        publicItineraries.push(newItinerary);
+                    }
+                    localStorage.setItem('globetrotter_public_itineraries', JSON.stringify(publicItineraries));
+                }
+                
+                resolve(newItinerary);
+              }, 500);
+            });
+          },
+          async getUserTrips(userId) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const userItinerariesKey = `globetrotter_itineraries_${userId}`;
+                    const trips = JSON.parse(localStorage.getItem(userItinerariesKey)) || [];
+                    resolve(trips);
+                }, 500);
+            });
+          },
+          async getPublicTrips(status = 'approved') {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const publicItineraries = JSON.parse(localStorage.getItem('globetrotter_public_itineraries')) || [];
+                    if (status === 'all') {
+                        resolve(publicItineraries);
+                    } else {
+                        resolve(publicItineraries.filter(trip => trip.status === status));
+                    }
+                }, 500);
+            });
+          },
+          async updateItineraryStatus(tripId, newStatus) {
+              return new Promise((resolve, reject) => {
+                  setTimeout(() => {
+                      let publicItineraries = JSON.parse(localStorage.getItem('globetrotter_public_itineraries')) || [];
+                      const tripIndex = publicItineraries.findIndex(t => t.id === tripId);
+                      if (tripIndex !== -1) {
+                          const tripToUpdate = publicItineraries[tripIndex];
+                          tripToUpdate.status = newStatus;
+                          publicItineraries[tripIndex] = tripToUpdate;
+                          localStorage.setItem('globetrotter_public_itineraries', JSON.stringify(publicItineraries));
+                          const userItinerariesKey = `globetrotter_itineraries_${tripToUpdate.ownerId}`;
+                          let userItineraries = JSON.parse(localStorage.getItem(userItinerariesKey)) || [];
+                          const userTripIndex = userItineraries.findIndex(t => t.id === tripId);
+                          if(userTripIndex !== -1) {
+                              userItineraries[userTripIndex].status = newStatus;
+                              localStorage.setItem(userItinerariesKey, JSON.stringify(userItineraries));
+                          }
+                          resolve(tripToUpdate);
+                      } else {
+                          reject(new Error("Trip not found in public itineraries."));
+                      }
+                  }, 500);
+              });
+          },
+          async getActivities(destination) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const allActivities = {
+                        'Tokyo': [
+                            { id: 1, name: 'Visit Senso-ji Temple', type: 'Sightseeing', cost: 0, duration: 2, image: 'https://source.unsplash.com/400x300/?senso-ji' },
+                            { id: 2, name: 'Shibuya Crossing Experience', type: 'Sightseeing', cost: 0, duration: 1, image: 'https://source.unsplash.com/400x300/?shibuya-crossing' },
+                            { id: 3, name: 'Sushi Making Class', type: 'Food Tour', cost: 7000, duration: 3, image: 'https://source.unsplash.com/400x300/?sushi' },
+                            { id: 4, name: 'Ghibli Museum', type: 'Art', cost: 1000, duration: 4, image: 'https://source.unsplash.com/400x300/?ghibli' },
+                        ],
+                        'Paris': [
+                            { id: 5, name: 'Eiffel Tower Summit', type: 'Sightseeing', cost: 2500, duration: 3, image: 'https://source.unsplash.com/400x300/?eiffel-tower' },
+                            { id: 6, name: 'Louvre Museum Guided Tour', type: 'Art', cost: 5000, duration: 4, image: 'https://source.unsplash.com/400x300/?louvre' },
+                            { id: 7, name: 'Seine River Cruise', type: 'Relaxation', cost: 1500, duration: 1, image: 'https://source.unsplash.com/400x300/?seine-river' },
+                            { id: 8, name: 'French Baking Class', type: 'Food Tour', cost: 8000, duration: 3, image: 'https://source.unsplash.com/400x300/?baking' },
+                        ],
+                        'Bhopal': [
+                            { id: 11, name: 'Kanha Fun City', type: 'Adventure', cost: 600, duration: 5, image: 'https://source.unsplash.com/400x300/?water-park' },
+                            { id: 12, name: 'DB Mall', type: 'Shopping', cost: 0, duration: 3, image: 'https://source.unsplash.com/400x300/?shopping-mall' },
+                            { id: 13, name: 'Van Vihar National Park', type: 'Nature', cost: 200, duration: 4, image: 'https://source.unsplash.com/400x300/?national-park' },
+                            { id: 14, name: 'Sanchi Stupa Day Trip', type: 'History', cost: 1500, duration: 6, image: 'https://source.unsplash.com/400x300/?sanchi-stupa' },
+                        ],
+                        'default': [
+                            { id: 9, name: 'City Walking Tour', type: 'Sightseeing', cost: 1000, duration: 3, image: 'https://source.unsplash.com/400x300/?city-walk' },
+                            { id: 10, name: 'Local Market Visit', type: 'Shopping', cost: 500, duration: 2, image: 'https://source.unsplash.com/400x300/?local-market' },
+                        ]
+                    };
+                    const activities = allActivities[destination] || allActivities['default'];
+                    resolve(activities);
+                }, 500);
+            });
+          }
+        };
+
+        // --- Gemini API Integration ---
+        const geminiApi = {
+          async generateContent(prompt, jsonSchema = null) {
+              const apiKey = "AIzaSyDQKFC_yN8A4QL0wxEboqy4KIt3LrgtEQo"; // Canvas will provide this
+              const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+              const payload = {
+                  contents: [{ role: "user", parts: [{ text: prompt }] }],
+              };
+              if (jsonSchema) {
+                  payload.generationConfig = {
+                      responseMimeType: "application/json",
+                      responseSchema: jsonSchema
+                  };
+              }
+              try {
+                  let response;
+                  let delay = 1000;
+                  for (let i = 0; i < 5; i++) {
+                      response = await fetch(apiUrl, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(payload)
+                      });
+                      if (response.ok) break;
+                      if (response.status === 429 || response.status >= 500) {
+                          await new Promise(res => setTimeout(res, delay));
+                          delay *= 2;
+                      } else { break; }
+                  }
+                  if (!response.ok) {
+                      const errorBody = await response.text();
+                      console.error("API Error Response:", errorBody);
+                      throw new Error(`API request failed with status ${response.status}`);
+                  }
+                  const result = await response.json();
+                  if (result.candidates && result.candidates.length > 0 &&
+                      result.candidates[0].content && result.candidates[0].content.parts &&
+                      result.candidates[0].content.parts.length > 0) {
+                      const text = result.candidates[0].content.parts[0].text;
+                      return jsonSchema ? JSON.parse(text) : text;
+                  } else {
+                      console.error("Unexpected API response structure:", result);
+                      throw new Error("Failed to generate content from API.");
+                  }
+              } catch (error) {
+                  console.error("Error calling Gemini API:", error);
+                  throw error;
+              }
+          }
+        };
+
+        // --- UI Components ---
+
+        const Toast = ({ message, type, onDismiss }) => {
+          const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+          useEffect(() => {
+            const timer = setTimeout(onDismiss, 5000);
+            return () => clearTimeout(timer);
+          }, [onDismiss]);
+
+          return (
+            <div className={`fixed bottom-5 right-5 ${bgColor} text-white py-3 px-6 rounded-lg shadow-xl z-50 flex items-center animate-fade-in-up`}>
+              {type === 'success' ? <icons.CheckCircle /> : <icons.XCircle />}
+              <span className="ml-3">{message}</span>
+              <button onClick={onDismiss} className="ml-4 font-bold">X</button>
+            </div>
+          );
+        };
+
+        const ItineraryCard = ({ trip, onCopy, onRequestJoin, isDarkMode, onViewBudget }) => {
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'approved': return 'bg-green-500';
+                    case 'pending': return 'bg-yellow-500';
+                    case 'rejected': return 'bg-red-500';
+                    case 'private': return 'bg-blue-500';
+                    default: return 'bg-gray-500';
+                }
+            };
+
+            const progress = useMemo(() => {
+                if (!trip.itinerary || trip.itinerary.length === 0) return 0;
+                const today = new Date();
+                const startDate = new Date(trip.itinerary[0].date || trip.createdAt);
+                const endDate = new Date(trip.itinerary[trip.itinerary.length - 1].date || new Date(startDate).setDate(startDate.getDate() + trip.duration_days));
+                
+                if (today < startDate) return 0;
+                if (today > endDate) return 100;
+
+                const totalDuration = endDate.getTime() - startDate.getTime();
+                const elapsed = today.getTime() - startDate.getTime();
+                return Math.min(100, Math.round((elapsed / totalDuration) * 100));
+
+            }, [trip]);
+
+            const destinationName = trip.final_destination || trip.title.split(' to ')[1] || 'Dream Destination';
+
+            return (
+                <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-lg border rounded-2xl p-5 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-1 flex flex-col`}>
+                    <div className="relative">
+                        <img 
+                            src={`https://source.unsplash.com/400x300/?${encodeURIComponent(destinationName)}`} 
+                            onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/400x300/${isDarkMode ? '1e293b/94a3b8' : 'e2e8f0/475569'}?text=${encodeURIComponent(destinationName)}`; }}
+                            alt={trip.title} 
+                            className="rounded-lg w-full h-40 object-cover mb-4"
+                        />
+                        <div className={`absolute top-2 right-2 text-xs font-bold text-white px-2 py-1 rounded-full ${getStatusColor(trip.status)}`}>
+                            {trip.status}
+                        </div>
+                    </div>
+                    <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-2 truncate`}>{trip.title}</h3>
+                    <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} text-sm mb-3 flex items-center`}><icons.Clock className="w-4 h-4 mr-2"/> {trip.duration_days} Days</p>
+                    <div className={`w-full ${isDarkMode ? 'bg-slate-700' : 'bg-slate-200'} rounded-full h-2.5 mb-4`}>
+                        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                    </div>
+                    <div className="mt-auto flex space-x-2">
+                        {onCopy && <button onClick={() => onCopy(trip)} className="flex-1 text-sm bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"><icons.Copy className="w-4 h-4 mr-2"/> Copy</button>}
+                        {onRequestJoin && <button onClick={() => onRequestJoin(trip)} className="flex-1 text-sm bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"><icons.UserPlus className="w-4 h-4 mr-2"/> Join</button>}
+                        {onViewBudget && <button onClick={() => onViewBudget(trip)} className="flex-1 text-sm bg-teal-600 hover:bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center"><icons.Rupee className="w-4 h-4 mr-2"/> Budget</button>}
+                    </div>
+                </div>
+            );
+        };
+        
+        const LoginSignup = ({ onLoginSuccess, isDarkMode, setIsDarkMode }) => {
+          const [isLogin, setIsLogin] = useState(true);
+          const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
+          const [toast, setToast] = useState(null);
+          const [isLoading, setIsLoading] = useState(false);
+
+          const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            setIsLoading(true);
+            setToast(null);
+            if (isLogin) {
+              try {
+                const user = await mockApi.login(formData.email, formData.password);
+                setToast({ message: 'Welcome back!', type: 'success' });
+                setTimeout(() => onLoginSuccess(user), 1500);
+              } catch (error) {
+                setToast({ message: error.message, type: 'error' });
+              }
+            } else {
+              if (formData.password !== formData.confirmPassword) {
+                setToast({ message: "Passwords don't match.", type: 'error' });
+                setIsLoading(false);
+                return;
+              }
+              try {
+                const newUser = await mockApi.signup(formData.firstName, formData.lastName, formData.email, formData.password);
+                setToast({ message: 'Account created successfully! Please log in.', type: 'success' });
+                setIsLogin(true);
+              } catch (error) {
+                setToast({ message: error.message, type: 'error' });
+              }
+            }
+            setIsLoading(false);
+          };
+
+          return (
+            <div className={`min-h-screen w-full flex items-center justify-center ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900' : 'bg-gradient-to-br from-gray-50 via-blue-100 to-violet-100'} p-4`}>
+              {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+              <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/60 border-white/80'} w-full max-w-md backdrop-blur-xl border rounded-2xl shadow-2xl p-8 transition-all duration-500`}>
+                <h1 className={`text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} text-center mb-2`}>GlobeTrotter AI</h1>
+                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} text-center mb-6`}>Your AI-Powered Travel Companion</p>
+                <div className={`flex ${isDarkMode ? 'bg-slate-900' : 'bg-slate-100'} p-1 rounded-lg mb-6`}>
+                  <button onClick={() => setIsLogin(true)} className={`w-1/2 p-2 rounded-md font-semibold transition-colors ${isLogin ? 'bg-indigo-600 text-white' : `${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-200'}`}`}>Sign In</button>
+                  <button onClick={() => setIsLogin(false)} className={`w-1/2 p-2 rounded-md font-semibold transition-colors ${!isLogin ? 'bg-purple-600 text-white' : `${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-200'}`}`}>Sign Up</button>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {!isLogin && (
+                    <div className="flex space-x-4">
+                      <input type="text" name="firstName" placeholder="First Name" onChange={handleInputChange} className={`w-1/2 ${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} required />
+                      <input type="text" name="lastName" placeholder="Last Name" onChange={handleInputChange} className={`w-1/2 ${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none`} required />
+                    </div>
+                  )}
+                  <input type="email" name="email" placeholder="Email" onChange={handleInputChange} className={`w-full ${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} required />
+                  <input type="password" name="password" placeholder="Password" onChange={handleInputChange} className={`w-full ${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} required />
+                  {!isLogin && (
+                    <input type="password" name="confirmPassword" placeholder="Confirm Password" onChange={handleInputChange} className={`w-full ${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none`} required />
+                  )}
+                  <button type="submit" disabled={isLoading} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/30 disabled:opacity-50 flex items-center justify-center">
+                    {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : (isLogin ? 'Sign In' : 'Create Account')}
+                  </button>
+                </form>
+              </div>
+            </div>
+          );
+        };
+
+        const OnboardingQuiz = ({ user, onComplete, isDarkMode }) => {
+            const [step, setStep] = useState(1);
+            const [preferences, setPreferences] = useState({ style: '', interests: [], pace: '' });
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleSelect = (key, value) => {
+                if (key === 'interests') {
+                    setPreferences(p => ({ ...p, interests: p.interests.includes(value) ? p.interests.filter(i => i !== value) : [...p.interests, value] }));
+                } else {
+                    setPreferences(p => ({ ...p, [key]: value }));
+                }
+            };
+
+            const nextStep = () => setStep(s => s + 1);
+            const prevStep = () => setStep(s => s - 1);
+
+            const handleSubmit = async () => {
+                setIsLoading(true);
+                try {
+                    await mockApi.updateUserProfile(user.id, { preferences });
+                    onComplete(preferences);
+                } catch (error) {
+                    console.error("Failed to save preferences:", error);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const renderStep = () => {
+                switch (step) {
+                    case 1: return (
+                        <div>
+                            <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-4`}>What's your travel style?</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {['Adventure', 'Relaxation', 'Cultural', 'Luxury', 'Budget', 'Family'].map(style => (
+                                    <button key={style} onClick={() => { handleSelect('style', style); nextStep(); }} className={`p-6 rounded-lg font-semibold transition-all duration-300 ${preferences.style === style ? 'bg-indigo-600 text-white ring-2 ring-indigo-400' : `${isDarkMode ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}`}>{style}</button>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                    case 2: return (
+                        <div>
+                            <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-4`}>What are your interests?</h3>
+                            <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mb-6`}>Select all that apply.</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {['History', 'Food', 'Nature', 'Art', 'Nightlife', 'Shopping', 'Sports', 'Wellness'].map(interest => (
+                                    <button key={interest} onClick={() => handleSelect('interests', interest)} className={`p-4 rounded-lg font-semibold transition-all duration-300 ${preferences.interests.includes(interest) ? 'bg-purple-600 text-white ring-2 ring-purple-400' : `${isDarkMode ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}`}>{interest}</button>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                    case 3: return (
+                        <div>
+                            <h3 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-4`}>What's your preferred trip pace?</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {['Fast-Paced', 'Balanced', 'Slow'].map(pace => (
+                                    <button key={pace} onClick={() => { handleSelect('pace', pace); }} className={`p-6 rounded-lg font-semibold transition-all duration-300 ${preferences.pace === pace ? 'bg-teal-600 text-white ring-2 ring-teal-400' : `${isDarkMode ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-slate-200 text-slate-800 hover:bg-slate-300'}`}`}>{pace}</button>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                    default: return null;
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white/80 border-slate-200'} backdrop-blur-lg border rounded-2xl p-8 w-full max-w-2xl animate-fade-in-up`}>
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Personalize Your Experience</h2>
+                                <p className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>Help us tailor your perfect trips.</p>
+                            </div>
+                            <div className={`${isDarkMode ? 'text-white' : 'text-slate-800'} font-bold`}>{step} / 3</div>
+                        </div>
+                        <div className="mb-8 min-h-[150px]">
+                            {renderStep()}
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <button onClick={prevStep} disabled={step === 1} className={`${isDarkMode ? 'bg-slate-600 hover:bg-slate-500 text-white' : 'bg-slate-300 hover:bg-slate-400 text-slate-800'} font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50`}>Back</button>
+                            {step < 3 && <button onClick={nextStep} disabled={(step === 2 && preferences.interests.length === 0)} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50">Next</button>}
+                            {step === 3 && <button onClick={handleSubmit} disabled={!preferences.pace || isLoading} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-2 px-6 rounded-lg transition-all shadow-lg hover:shadow-purple-500/30 disabled:opacity-50 flex items-center justify-center">
+                                {isLoading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Finish'}
+                            </button>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const Dashboard = ({ user, setPage, isDarkMode }) => {
+            const [stats, setStats] = useState({ countries: 0, trips: 0, shared: 0, saved: 0 });
+            const [upcomingTrips, setUpcomingTrips] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [idea, setIdea] = useState('');
+            const [generatedIdea, setGeneratedIdea] = useState(null);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [toast, setToast] = useState(null);
+
+            useEffect(() => {
+                const fetchDashboardData = async () => {
+                    setLoading(true);
+                    const userTrips = await mockApi.getUserTrips(user.id);
+                    const publicTrips = await mockApi.getPublicTrips('all');
+                    
+                    const countries = new Set();
+                    let totalSavings = 0;
+                    userTrips.forEach(trip => {
+                        countries.add(trip.final_destination);
+                        // Mock savings calculation
+                        if (trip.budget_style === 'Budget') {
+                            totalSavings += (trip.duration_days * 3000); // Assume saving 3000/day on budget trips
+                        }
+                    });
+
+                    setStats({
+                        countries: countries.size,
+                        trips: userTrips.length,
+                        shared: userTrips.filter(t => t.isPublic).length,
+                        saved: totalSavings
+                    });
+
+                    setUpcomingTrips(userTrips.slice(0, 3));
+                    setLoading(false);
+                };
+                fetchDashboardData();
+            }, [user.id]);
+            
+            const handleGenerateIdea = async () => {
+                if (!idea.trim()) {
+                    setToast({ message: "Please enter a travel idea.", type: 'error' });
+                    return;
+                }
+                setIsGenerating(true);
+                setGeneratedIdea(null);
+                try {
+                    const prompt = `Generate a single, concise, and exciting travel trip idea based on the following user input: "${idea}". The idea should be a short paragraph, highlighting a key destination and a unique activity.`;
+                    const result = await geminiApi.generateContent(prompt);
+                    setGeneratedIdea(result);
+                    setToast({ message: "Inspiration found!", type: 'success' });
+                } catch (error) {
+                    setToast({ message: "Could not generate an idea. Please try again.", type: 'error' });
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            const StatCard = ({ icon, label, value }) => (
+                <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-lg border rounded-2xl p-5`}>
+                    <div className="text-indigo-400 mb-2">{cloneElement(icon, { className: "w-8 h-8" })}</div>
+                    <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+                    <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} text-sm`}>{label}</p>
+                </div>
+            );
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+                    {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div>
+                            <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Welcome back, {user.firstName}! 👋</h1>
+                            <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mt-1`}>Let's plan your next adventure.</p>
+                        </div>
+                        <button onClick={() => setPage('planner')} className="mt-4 sm:mt-0 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/30 flex items-center">
+                            <icons.Plus /> <span className="ml-2">Plan New Trip</span>
+                        </button>
+                    </div>
+
+                    {loading ? <div className="text-center">Loading stats...</div> : (
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <StatCard icon={<icons.MapPin/>} label="Countries Visited" value={stats.countries} />
+                            <StatCard icon={<icons.TrendingUp/>} label="Total Trips Planned" value={stats.trips} />
+                            <StatCard icon={<icons.Users/>} label="Shared Plans" value={stats.shared} />
+                            <StatCard icon={<icons.Rupee/>} label="Estimated Savings (₹)" value={stats.saved.toLocaleString('en-IN')} />
+                        </div>
+                    )}
+                   
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-8">
+                            <div>
+                                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-4`}>Upcoming Trips</h2>
+                                <div className="space-y-4">
+                                    {loading ? <p>Loading trips...</p> : upcomingTrips.length > 0 ? upcomingTrips.map(trip => (
+                                        <ItineraryCard key={trip.id} trip={trip} isDarkMode={isDarkMode} />
+                                    )) : <p className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>No upcoming trips. Time to plan one!</p>}
+                                </div>
+                            </div>
+                            <div>
+                                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-4`}>AI Trip Idea Generator</h2>
+                                <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-lg border rounded-2xl p-6`}>
+                                    <p className={`${isDarkMode ? 'text-slate-300' : 'text-slate-700'} mb-4`}>Looking for inspiration? Describe your dream vacation.</p>
+                                    <div className="flex flex-col sm:flex-row gap-4">
+                                        <input type="text" value={idea} onChange={(e) => setIdea(e.target.value)} placeholder="e.g., a relaxing beach vacation in Southeast Asia" className={`flex-grow ${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} />
+                                        <button onClick={handleGenerateIdea} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50">
+                                            {isGenerating ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : "Get Inspiration"}
+                                        </button>
+                                    </div>
+                                    {generatedIdea && (
+                                        <div className={`mt-6 p-4 ${isDarkMode ? 'bg-slate-900 border-indigo-500/50' : 'bg-slate-100 border-indigo-500/20'} rounded-lg border`}>
+                                            <p className={isDarkMode ? 'text-slate-300' : 'text-slate-700'}>{generatedIdea}</p>
+                                            <button onClick={() => setPage('planner')} className="mt-4 text-sm bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors">Plan This Trip</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-8">
+                           {/* Other dashboard items like Recent Activity can go here */}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ActivitySearch = ({ destination, onAddActivity, onClose, isDarkMode }) => {
+            const [activities, setActivities] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [filters, setFilters] = useState({ type: 'All', cost: 'All' });
+
+            useEffect(() => {
+                mockApi.getActivities(destination).then(data => {
+                    setActivities(data);
+                    setLoading(false);
+                });
+            }, [destination]);
+
+            const handleFilterChange = (e) => {
+                setFilters({ ...filters, [e.target.name]: e.target.value });
+            };
+
+            const filteredActivities = useMemo(() => {
+                return activities.filter(act => {
+                    const typeMatch = filters.type === 'All' || act.type === filters.type;
+                    const costMatch = filters.cost === 'All' || (filters.cost === 'Free' && act.cost === 0) || (filters.cost === 'Paid' && act.cost > 0);
+                    return typeMatch && costMatch;
+                });
+            }, [activities, filters]);
+
+            const inputClasses = isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300';
+
+            return (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+                    <div className={`${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white/80 border-slate-200'} backdrop-blur-lg border rounded-2xl p-8 w-full max-w-3xl animate-fade-in-up h-[90vh] flex flex-col`} onClick={e => e.stopPropagation()}>
+                        <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-4`}>Find Activities in {destination}</h2>
+                        
+                        <div className="flex gap-4 mb-4">
+                            <select name="type" onChange={handleFilterChange} className={`w-full ${inputClasses} border rounded-lg p-2`}>
+                                <option>All</option>
+                                <option>Sightseeing</option>
+                                <option>Food Tour</option>
+                                <option>Art</option>
+                                <option>Relaxation</option>
+                                <option>Shopping</option>
+                                <option>Adventure</option>
+                                <option>Nature</option>
+                                <option>History</option>
+                            </select>
+                            <select name="cost" onChange={handleFilterChange} className={`w-full ${inputClasses} border rounded-lg p-2`}>
+                                <option>All</option>
+                                <option>Free</option>
+                                <option>Paid</option>
+                            </select>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto pr-2">
+                            {loading ? <p>Loading activities...</p> : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {filteredActivities.map(act => (
+                                        <div key={act.id} className={`${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-100/50'} p-4 rounded-lg`}>
+                                            <img src={act.image} alt={act.name} className="w-full h-32 object-cover rounded-lg mb-2"/>
+                                            <h4 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{act.name}</h4>
+                                            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{act.type} - {act.duration} hours</p>
+                                            <p className={`text-sm font-semibold ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>Cost: ₹{act.cost}</p>
+                                            <button onClick={() => onAddActivity(act)} className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Add to Day</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <button onClick={onClose} className="mt-6 w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg">Close</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const ItineraryPlanner = ({ user, setPage, isDarkMode }) => {
+            const [formData, setFormData] = useState({
+                startDest: '', finalDest: '', stops: [''], startDate: '', endDate: '', travelers: 1, budget: 'Mid-Range', customPrompt: ''
+            });
+            const [generatedItinerary, setGeneratedItinerary] = useState(null);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [makePublic, setMakePublic] = useState(false);
+            const [toast, setToast] = useState(null);
+            const [showActivitySearch, setShowActivitySearch] = useState(false);
+            const [currentDayForActivity, setCurrentDayForActivity] = useState(null);
+
+            const handleInputChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+            const handleStopChange = (index, value) => {
+                const newStops = [...formData.stops];
+                newStops[index] = value;
+                setFormData({ ...formData, stops: newStops });
+            };
+            const addStop = () => setFormData({ ...formData, stops: [...formData.stops, ''] });
+            const removeStop = (index) => setFormData({ ...formData, stops: formData.stops.filter((_, i) => i !== index) });
+
+            const itinerarySchema = {
+                type: "OBJECT",
+                properties: {
+                    "title": { "type": "STRING" }, "starting_destination": { "type": "STRING" }, "final_destination": { "type": "STRING" }, "duration_days": { "type": "NUMBER" }, "budget_style": { "type": "STRING" }, "interests": { "type": "ARRAY", "items": { "type": "STRING" } },
+                    "itinerary": { "type": "ARRAY", "items": { "type": "OBJECT", "properties": { 
+                        "day": { "type": "NUMBER" }, "title": { "type": "STRING" }, "location": { "type": "STRING" }, 
+                        "activities": { "type": "ARRAY", "items": { "type": "OBJECT", "properties": { "name": {"type": "STRING"}, "estimated_cost": {"type": "NUMBER"}} } }, 
+                        "food": { "type": "ARRAY", "items": { "type": "OBJECT", "properties": { "name": {"type": "STRING"}, "estimated_cost": {"type": "NUMBER"}} } }, 
+                        "accommodation": { "type": "OBJECT", "properties": { "name": {"type": "STRING"}, "estimated_cost": {"type": "NUMBER"}} },
+                        "transportation": { "type": "ARRAY", "items": { "type": "OBJECT", "properties": { "name": {"type": "STRING"}, "estimated_cost": {"type": "NUMBER"}}}}
+                    }, "required": ["day", "title", "location", "activities", "food", "accommodation"] } }
+                }, "required": ["title", "starting_destination", "final_destination", "duration_days", "budget_style", "itinerary"]
+            };
+
+            const handleGenerate = async () => {
+                if (!formData.startDest || !formData.finalDest || !formData.startDate || !formData.endDate) {
+                    setToast({ message: "Please fill all required fields.", type: 'error' });
+                    return;
+                }
+                setIsGenerating(true); setGeneratedItinerary(null); setToast(null);
+                const stopsText = formData.stops.filter(s => s.trim() !== '').join(', ');
+                const prompt = `Generate a multi-city travel itinerary. - Starting Destination: ${formData.startDest} - Final Destination: ${formData.finalDest} - Intermediate Stops: ${stopsText || 'None'} - Dates: From ${formData.startDate} to ${formData.endDate} - Number of Travelers: ${formData.travelers} - Budget Style: ${formData.budget} - User Preferences: Style: ${user.preferences?.style || 'Balanced'}, Interests: ${(user.preferences?.interests || []).join(', ')} - Additional Details: ${formData.customPrompt || 'None'} Create a logical day-by-day plan. For each day, suggest activities, food options, transportation, and a type of accommodation that fits the budget. For each item, provide a name and an estimated_cost in INR. The final output must be a JSON object matching the provided schema.`;
+                try {
+                    const result = await geminiApi.generateContent(prompt, itinerarySchema);
+                    setGeneratedItinerary(result);
+                    setToast({ message: "Your itinerary has been generated!", type: 'success' });
+                } catch (error) {
+                    setToast({ message: "Failed to generate itinerary. The AI might be busy. Please try again.", type: 'error' });
+                } finally { setIsGenerating(false); }
+            };
+            
+            const handleAddActivity = (activity) => {
+                setGeneratedItinerary(prev => {
+                    const newItinerary = JSON.parse(JSON.stringify(prev)); // Deep copy
+                    const dayIndex = newItinerary.itinerary.findIndex(d => d.day === currentDayForActivity.day);
+                    if (dayIndex !== -1) {
+                        if (!newItinerary.itinerary[dayIndex].activities) {
+                            newItinerary.itinerary[dayIndex].activities = [];
+                        }
+                        newItinerary.itinerary[dayIndex].activities.push({ name: activity.name, estimated_cost: activity.cost });
+                    }
+                    return newItinerary;
+                });
+                setToast({ message: `${activity.name} added!`, type: 'success' });
+            };
+
+            const handleSave = async () => {
+                if (!generatedItinerary) return;
+                setToast({ message: "Saving...", type: 'success' });
+                try {
+                    await mockApi.saveItinerary(user.id, generatedItinerary, makePublic);
+                    setToast({ message: `Trip saved successfully! ${makePublic ? 'It is pending community approval.' : ''}`, type: 'success' });
+                    setTimeout(() => setPage('myTrips'), 2000);
+                } catch(error) {
+                    setToast({ message: "Failed to save trip.", type: 'error' });
+                }
+            };
+
+            const inputClasses = isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300';
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+                    {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+                    {showActivitySearch && <ActivitySearch destination={currentDayForActivity.location} onAddActivity={handleAddActivity} onClose={() => setShowActivitySearch(false)} isDarkMode={isDarkMode} />}
+                    
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>AI Itinerary Planner</h1>
+                    <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-lg border rounded-2xl p-8`}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <input type="text" name="startDest" placeholder="Starting Destination (e.g., Bhopal)" onChange={handleInputChange} className={`w-full ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} />
+                            <input type="text" name="finalDest" placeholder="Final Destination" onChange={handleInputChange} className={`w-full ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none`} />
+                        </div>
+                        <div className="mb-6">
+                            <label className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mb-2 block`}>Intermediate Stops</label>
+                            {formData.stops.map((stop, index) => (
+                                <div key={index} className="flex items-center gap-2 mb-2">
+                                    <input type="text" value={stop} onChange={(e) => handleStopChange(index, e.target.value)} placeholder={`Stop ${index + 1}`} className={`flex-grow ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} />
+                                    <button onClick={() => removeStop(index)} className="bg-red-600 hover:bg-red-500 text-white p-3 rounded-lg"><icons.XCircle /></button>
+                                </div>
+                            ))}
+                            <button onClick={addStop} className="text-indigo-400 hover:text-indigo-300 font-semibold text-sm">+ Add another stop</button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <input type="date" name="startDate" onChange={handleInputChange} className={`w-full ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} />
+                            <input type="date" name="endDate" onChange={handleInputChange} className={`w-full ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none`} />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <input type="number" name="travelers" min="1" value={formData.travelers} onChange={handleInputChange} placeholder="Number of Travelers" className={`w-full ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:outline-none`} />
+                            <select name="budget" value={formData.budget} onChange={handleInputChange} className={`w-full ${inputClasses} border rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:outline-none`}>
+                                <option>Budget</option>
+                                <option>Mid-Range</option>
+                                <option>Luxury</option>
+                            </select>
+                        </div>
+                        <textarea name="customPrompt" onChange={handleInputChange} placeholder="Any special requests? (e.g., 'I prefer vegan food', 'Include historical sites')" className={`w-full ${inputClasses} border rounded-lg p-3 h-24 focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-6`}></textarea>
+                        <button onClick={handleGenerate} disabled={isGenerating} className="w-full text-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-lg transition-all duration-300 shadow-lg hover:shadow-purple-500/30 disabled:opacity-50 flex items-center justify-center">
+                            {isGenerating ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : "✨ Create My Itinerary"}
+                        </button>
+                    </div>
+
+                    {generatedItinerary && (
+                        <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} mt-8 backdrop-blur-lg border rounded-2xl p-8 animate-fade-in`}>
+                            <h2 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-4`}>{generatedItinerary.title}</h2>
+                            <div className="space-y-6">
+                                {generatedItinerary.itinerary.map(day => (
+                                    <div key={day.day} className={`p-4 ${isDarkMode ? 'bg-slate-900/50 border-slate-700' : 'bg-slate-100/50 border-slate-200'} rounded-lg border`}>
+                                        <div className="flex justify-between items-center">
+                                            <h4 className={`text-xl font-bold text-indigo-400 mb-2`}>Day {day.day}: {day.title} <span className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'} font-normal`}>- {day.location}</span></h4>
+                                            <button onClick={() => { setCurrentDayForActivity(day); setShowActivitySearch(true); }} className="text-sm bg-teal-600 hover:bg-teal-500 text-white font-semibold py-1 px-3 rounded-lg flex items-center"><icons.Search className="w-4 h-4 mr-2"/> Find Activities</button>
+                                        </div>
+                                        <div className={`${isDarkMode ? 'text-slate-300' : 'text-slate-700'} space-y-2 mt-2 text-sm`}>
+                                            <p><strong>Transportation:</strong> {(day.transportation || []).map(t => `${t.name} (₹${t.estimated_cost})`).join(', ') || 'Not specified'}</p>
+                                            <p><strong>Activities:</strong> {day.activities.map(a => `${a.name} (₹${a.estimated_cost})`).join(', ')}</p>
+                                            <p><strong>Food:</strong> {day.food.map(f => `${f.name} (₹${f.estimated_cost})`).join(', ')}</p>
+                                            <p><strong>Accommodation:</strong> {day.accommodation.name} (₹{day.accommodation.estimated_cost})</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                             <div className="mt-8 space-y-6">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <label className={`flex items-center ${isDarkMode ? 'text-slate-300' : 'text-slate-700'} cursor-pointer`}>
+                                        <input type="checkbox" checked={makePublic} onChange={(e) => setMakePublic(e.target.checked)} className={`form-checkbox h-5 w-5 text-purple-600 ${isDarkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-200 border-slate-400'} rounded focus:ring-purple-500`} />
+                                        <span className="ml-2">Make this itinerary public</span>
+                                    </label>
+                                    <button onClick={handleSave} className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg transition-colors">Save to My Trips</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        const MyTrips = ({ user, setPage, isDarkMode, setSelectedTrip }) => {
+            const [trips, setTrips] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [filter, setFilter] = useState('all');
+
+            useEffect(() => {
+                const fetchTrips = async () => {
+                    setLoading(true);
+                    const userTrips = await mockApi.getUserTrips(user.id);
+                    setTrips(userTrips);
+                    setLoading(false);
+                };
+                fetchTrips();
+            }, [user.id]);
+
+            const filteredTrips = useMemo(() => {
+                if (filter === 'all') return trips;
+                return trips.filter(trip => trip.status === filter);
+            }, [trips, filter]);
+            
+            const handleViewBudget = (trip) => {
+                setSelectedTrip(trip);
+                setPage('budget');
+            };
+
+            if (loading) return <div className="flex justify-center items-center h-full"><div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8">
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-6`}>My Trips</h1>
+                    <div className="mb-6 flex items-center gap-4">
+                        <icons.Filter className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}/>
+                        <select onChange={(e) => setFilter(e.target.value)} value={filter} className={`${isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300'} border rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none`}>
+                            <option value="all">All</option>
+                            <option value="private">Private</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    {filteredTrips.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {filteredTrips.map(trip => <ItineraryCard key={trip.id} trip={trip} isDarkMode={isDarkMode} onViewBudget={handleViewBudget} />)}
+                        </div>
+                    ) : (
+                        <div className={`text-center py-16 ${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} rounded-2xl`}>
+                            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>No trips found for this filter.</h2>
+                            <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mt-2`}>Why not plan a new one?</p>
+                            <button onClick={() => setPage('planner')} className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg">Plan a Trip</button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const CommunityHub = ({ user, setPage, isDarkMode }) => {
+            const [publicTrips, setPublicTrips] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [toast, setToast] = useState(null);
+
+            useEffect(() => {
+                const fetchPublicTrips = async () => {
+                    setLoading(true);
+                    const trips = await mockApi.getPublicTrips('approved');
+                    setPublicTrips(trips);
+                    setLoading(false);
+                };
+                fetchPublicTrips();
+            }, []);
+            
+            const handleCopyToMyTrips = async (trip) => {
+                setToast({ message: "Copying to your trips...", type: 'success' });
+                const newTripData = { ...trip, isPublic: false, status: 'private' };
+                delete newTripData.id; 
+                delete newTripData.ownerId;
+                try {
+                    await mockApi.saveItinerary(user.id, newTripData, false);
+                    setToast({ message: "Trip copied to 'My Trips'!", type: 'success' });
+                } catch (error) {
+                    setToast({ message: "Failed to copy trip.", type: 'error' });
+                }
+            };
+
+            const handleRequestToJoin = (trip) => {
+                setToast({ message: `Request to join "${trip.title}" sent! (Feature coming soon)`, type: 'success' });
+            };
+
+            if (loading) return <div className="flex justify-center items-center h-full"><div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8">
+                    {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-6`}>Community Hub</h1>
+                    <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mb-8`}>Explore itineraries shared by other travelers. Get inspired for your next journey!</p>
+                    {publicTrips.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {publicTrips.map(trip => (
+                                <ItineraryCard 
+                                    key={trip.id} 
+                                    trip={trip} 
+                                    onCopy={handleCopyToMyTrips}
+                                    onRequestJoin={handleRequestToJoin}
+                                    isDarkMode={isDarkMode}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className={`text-center py-16 ${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} rounded-2xl`}>
+                            <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>The community hub is quiet...</h2>
+                            <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mt-2`}>Be the first to share a public trip!</p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        const BudgetView = ({ trip, setPage, isDarkMode, user }) => {
+            const [editableTrip, setEditableTrip] = useState(JSON.parse(JSON.stringify(trip))); // Deep copy
+            const [newItem, setNewItem] = useState({ day: 1, category: 'Activities', name: '', cost: '' });
+            const [toast, setToast] = useState(null);
+
+            const budgetData = useMemo(() => {
+                if (!editableTrip || !editableTrip.itinerary) return null;
+                
+                const breakdown = { Accommodation: 0, Food: 0, Activities: 0, Transportation: 0, Total: 0 };
+
+                editableTrip.itinerary.forEach(day => {
+                    breakdown.Accommodation += day.accommodation?.estimated_cost || 0;
+                    (day.food || []).forEach(f => breakdown.Food += f.estimated_cost || 0);
+                    (day.activities || []).forEach(a => breakdown.Activities += a.estimated_cost || 0);
+                    (day.transportation || []).forEach(t => breakdown.Transportation += t.estimated_cost || 0);
+                });
+
+                breakdown.Total = breakdown.Accommodation + breakdown.Food + breakdown.Activities + breakdown.Transportation;
+                const avgPerDay = breakdown.Total / editableTrip.duration_days;
+
+                return { breakdown, avgPerDay };
+            }, [editableTrip]);
+            
+            const handleItemAdd = async () => {
+                if (!newItem.name || !newItem.cost) {
+                    setToast({ message: "Please enter item name and cost.", type: 'error' });
+                    return;
+                }
+                const updatedTrip = JSON.parse(JSON.stringify(editableTrip));
+                const dayIndex = updatedTrip.itinerary.findIndex(d => d.day == newItem.day);
+                if (dayIndex !== -1) {
+                    const categoryKey = newItem.category.toLowerCase();
+                    if (!updatedTrip.itinerary[dayIndex][categoryKey]) {
+                        updatedTrip.itinerary[dayIndex][categoryKey] = [];
+                    }
+                    updatedTrip.itinerary[dayIndex][categoryKey].push({ name: newItem.name, estimated_cost: parseFloat(newItem.cost) });
+                    
+                    setEditableTrip(updatedTrip);
+                    await mockApi.saveItinerary(user.id, updatedTrip, updatedTrip.isPublic);
+                    setToast({ message: "Item added and trip updated!", type: 'success' });
+                    setNewItem({ day: 1, category: 'Activities', name: '', cost: '' });
+                }
+            };
+            
+            if (!budgetData) {
+                return (
+                    <div className="p-8 text-center">
+                        <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>No trip selected.</h2>
+                        <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mt-2`}>Go to 'My Trips' to view a budget.</p>
+                        <button onClick={() => setPage('myTrips')} className="mt-6 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg">Go to My Trips</button>
+                    </div>
+                );
+            }
+            
+            const { breakdown, avgPerDay } = budgetData;
+            const maxCost = Math.max(1, breakdown.Accommodation, breakdown.Food, breakdown.Activities, breakdown.Transportation);
+
+            const Bar = ({ label, value, color }) => (
+                <div>
+                    <div className="flex justify-between mb-1">
+                        <span className="text-base font-medium">{label}</span>
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>₹{value.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className={`w-full ${isDarkMode ? 'bg-slate-700' : 'bg-gray-200'} rounded-full h-4`}>
+                        <div className={`${color} h-4 rounded-full`} style={{ width: `${(value / maxCost) * 100}%` }}></div>
+                    </div>
+                </div>
+            );
+            
+            const inputClasses = isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300';
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8">
+                    {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-2`}>Budget for: {trip.title}</h1>
+                    <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'} mb-8`}>An estimated cost breakdown for your adventure. Add or remove items to see the budget update in real-time.</p>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-lg p-6 rounded-2xl`}>
+                                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-6`}>Cost Breakdown</h2>
+                                <div className="space-y-4">
+                                    <Bar label="Accommodation" value={breakdown.Accommodation} color="bg-blue-500" />
+                                    <Bar label="Food" value={breakdown.Food} color="bg-green-500" />
+                                    <Bar label="Activities" value={breakdown.Activities} color="bg-yellow-500" />
+                                    <Bar label="Transportation" value={breakdown.Transportation} color="bg-red-500" />
+                                </div>
+                            </div>
+                             <div className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-lg p-6 rounded-2xl`}>
+                                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-4`}>Add Expense</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} placeholder="Item Name (e.g., Taxi)" className={`w-full ${inputClasses} border rounded-lg p-3`} />
+                                    <input type="number" value={newItem.cost} onChange={e => setNewItem({...newItem, cost: e.target.value})} placeholder="Cost (₹)" className={`w-full ${inputClasses} border rounded-lg p-3`} />
+                                    <select value={newItem.day} onChange={e => setNewItem({...newItem, day: e.target.value})} className={`w-full ${inputClasses} border rounded-lg p-3`}>
+                                        {editableTrip.itinerary.map(d => <option key={d.day} value={d.day}>Day {d.day}</option>)}
+                                    </select>
+                                    <select value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} className={`w-full ${inputClasses} border rounded-lg p-3`}>
+                                        <option>Activities</option>
+                                        <option>Food</option>
+                                        <option>Transportation</option>
+                                    </select>
+                                </div>
+                                <button onClick={handleItemAdd} className="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg">Add Item</button>
+                            </div>
+                        </div>
+                        <div className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-lg p-6 rounded-2xl flex flex-col justify-center items-center`}>
+                             <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} mb-4`}>Trip Summary</h2>
+                             <div className="text-center">
+                                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Total Estimated Cost</p>
+                                <p className={`text-4xl font-bold text-indigo-400 my-2`}>₹{breakdown.Total.toLocaleString('en-IN')}</p>
+                             </div>
+                             <div className="text-center mt-4">
+                                <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Average Cost Per Day</p>
+                                <p className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'} my-1`}>₹{avgPerDay.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const CalendarPage = ({ user, isDarkMode }) => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+            const [trips, setTrips] = useState([]);
+
+            useEffect(() => {
+                mockApi.getUserTrips(user.id).then(setTrips);
+            }, [user.id]);
+
+            const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+            const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+
+            const changeMonth = (offset) => {
+                setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
+            };
+
+            const tripsInMonth = useMemo(() => {
+                const monthTrips = {};
+                trips.forEach(trip => {
+                    if (!trip.itinerary || trip.itinerary.length === 0) return;
+                    const firstItineraryDate = trip.itinerary.find(i => i.date)?.date;
+                    const startDate = new Date(firstItineraryDate || trip.createdAt);
+                    let currentDay = new Date(startDate);
+                    for(let i=0; i < trip.duration_days; i++) {
+                        if (currentDay.getMonth() === currentDate.getMonth() && currentDay.getFullYear() === currentDate.getFullYear()) {
+                            const dayOfMonth = currentDay.getDate();
+                            if (!monthTrips[dayOfMonth]) monthTrips[dayOfMonth] = [];
+                            monthTrips[dayOfMonth].push(trip.title);
+                        }
+                        currentDay.setDate(currentDay.getDate() + 1);
+                    }
+                });
+                return monthTrips;
+            }, [trips, currentDate]);
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8">
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-6`}>Trip Calendar</h1>
+                    <div className={`${isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-slate-200'} backdrop-blur-lg border rounded-2xl p-6`}>
+                        <div className="flex justify-between items-center mb-4">
+                            <button onClick={() => changeMonth(-1)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}><icons.ChevronLeft /></button>
+                            <h2 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
+                            <button onClick={() => changeMonth(1)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}><icons.ChevronRight /></button>
+                        </div>
+                        <div className="grid grid-cols-7 gap-1 text-center text-sm mb-2">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{day}</div>)}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                            {Array.from({ length: firstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} className="h-24"></div>)}
+                            {Array.from({ length: daysInMonth }).map((_, i) => {
+                                const day = i + 1;
+                                return (
+                                    <div key={day} className={`h-24 ${isDarkMode ? 'bg-slate-900/50' : 'bg-slate-100/50'} rounded-lg p-2 overflow-y-auto text-left`}>
+                                        <span className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{day}</span>
+                                        <div className="text-xs mt-1 space-y-1">
+                                            {tripsInMonth[day]?.map((title, idx) => (
+                                                <div key={idx} className="bg-indigo-600/80 text-white p-1 rounded truncate">{title}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AdminPanel = ({ user, isDarkMode }) => {
+            const [pendingTrips, setPendingTrips] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [toast, setToast] = useState(null);
+
+            const fetchPendingTrips = useCallback(async () => {
+                setLoading(true);
+                const trips = await mockApi.getPublicTrips('all');
+                setPendingTrips(trips.filter(t => t.status === 'pending'));
+                setLoading(false);
+            }, []);
+
+            useEffect(() => {
+                fetchPendingTrips();
+            }, [fetchPendingTrips]);
+
+            const handleApproval = async (tripId, newStatus) => {
+                try {
+                    await mockApi.updateItineraryStatus(tripId, newStatus);
+                    setToast({ message: `Trip has been ${newStatus}.`, type: 'success' });
+                    fetchPendingTrips();
+                } catch (error) {
+                    setToast({ message: "Failed to update trip status.", type: 'error' });
+                }
+            };
+
+            if (loading) return <div className="flex justify-center items-center h-full"><div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8">
+                    {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-6`}>Admin Panel - Pending Approvals</h1>
+                    {pendingTrips.length > 0 ? (
+                        <div className="space-y-4">
+                            {pendingTrips.map(trip => (
+                                <div key={trip.id} className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} p-4 rounded-lg flex items-center justify-between`}>
+                                    <div>
+                                        <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{trip.title}</h3>
+                                        <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>by User ID: {trip.ownerId}</p>
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <button onClick={() => handleApproval(trip.id, 'approved')} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg">Approve</button>
+                                        <button onClick={() => handleApproval(trip.id, 'rejected')} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Reject</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className={isDarkMode ? 'text-slate-400' : 'text-slate-600'}>No pending trips for approval.</p>
+                    )}
+                </div>
+            );
+        };
+
+        const SettingsPage = ({ user, onLogout, isDarkMode, setUser }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [formData, setFormData] = useState({ firstName: user.firstName, lastName: user.lastName, email: user.email });
+            const [toast, setToast] = useState(null);
+            const [userTrips, setUserTrips] = useState([]);
+            
+            useEffect(() => {
+                mockApi.getUserTrips(user.id).then(setUserTrips);
+            }, [user.id]);
+
+            const handleInputChange = (e) => {
+                setFormData({ ...formData, [e.target.name]: e.target.value });
+            };
+
+            const handleSave = async () => {
+                setToast({ message: "Saving...", type: 'success' });
+                try {
+                    const updatedUser = await mockApi.updateUserProfile(user.id, formData);
+                    setUser(updatedUser); // Update user state in parent
+                    setToast({ message: "Profile updated successfully!", type: 'success' });
+                    setIsEditing(false);
+                } catch (error) {
+                    setToast({ message: "Failed to update profile.", type: 'error' });
+                }
+            };
+
+            const handleDeleteAccount = async () => {
+                if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                    setToast({ message: "Deleting account...", type: 'error' });
+                    await mockApi.deleteUserAccount(user.id);
+                    onLogout();
+                }
+            };
+
+            const visitedDestinations = useMemo(() => {
+                const destinations = new Set();
+                userTrips.forEach(trip => {
+                    destinations.add(trip.starting_destination);
+                    destinations.add(trip.final_destination);
+                });
+                return Array.from(destinations);
+            }, [userTrips]);
+            
+            const inputClasses = isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100 text-slate-900 border-slate-300';
+            const disabledInputClasses = isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-200 text-slate-500';
+
+            return (
+                <div className="p-4 sm:p-6 lg:p-8">
+                    {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+                    <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'} mb-8`}>Settings & Profile</h1>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div className="lg:col-span-2 space-y-8">
+                            {/* Profile Information */}
+                            <div className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-lg p-6 rounded-2xl`}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold">Profile Information</h2>
+                                    <button onClick={() => setIsEditing(!isEditing)} className="text-sm bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-4 rounded-lg">{isEditing ? 'Cancel' : 'Edit'}</button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} disabled={!isEditing} placeholder="First Name" className={`w-full ${isEditing ? inputClasses : disabledInputClasses} border rounded-lg p-3`} />
+                                        <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} disabled={!isEditing} placeholder="Last Name" className={`w-full ${isEditing ? inputClasses : disabledInputClasses} border rounded-lg p-3`} />
+                                    </div>
+                                    <input type="email" name="email" value={formData.email} onChange={handleInputChange} disabled={!isEditing} placeholder="Email" className={`w-full ${isEditing ? inputClasses : disabledInputClasses} border rounded-lg p-3`} />
+                                    {isEditing && <button onClick={handleSave} className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg">Save Changes</button>}
+                                </div>
+                            </div>
+                            {/* Danger Zone */}
+                            <div className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-lg p-6 rounded-2xl border border-red-500/30`}>
+                                <h2 className="text-xl font-bold text-red-500 mb-4">Danger Zone</h2>
+                                <button onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg flex items-center"><icons.Trash2 className="mr-2"/> Delete My Account</button>
+                            </div>
+                        </div>
+                        {/* Saved Destinations */}
+                        <div className={`${isDarkMode ? 'bg-slate-800/50' : 'bg-white/50'} backdrop-blur-lg p-6 rounded-2xl`}>
+                            <h2 className="text-xl font-bold mb-4">My Destinations</h2>
+                            <div className="space-y-2 max-h-96 overflow-y-auto">
+                                {visitedDestinations.length > 0 ? visitedDestinations.map(dest => (
+                                    <div key={dest} className={`flex items-center p-2 rounded ${isDarkMode ? 'bg-slate-700/50' : 'bg-slate-100/50'}`}>
+                                        <icons.MapPin className="w-5 h-5 mr-3 text-indigo-400"/>
+                                        <span>{dest}</span>
+                                    </div>
+                                )) : <p className="text-sm text-slate-400">You haven't planned any trips yet.</p>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- Main App Component ---
+        const App = () => {
+          const [user, setUser] = useState(null);
+          const [page, setPage] = useState('dashboard');
+          const [selectedTrip, setSelectedTrip] = useState(null); // For budget view
+          const [showOnboarding, setShowOnboarding] = useState(false);
+          const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+          const [isDarkMode, setIsDarkMode] = useState(false);
+
+          useEffect(() => {
+            const loggedInUser = sessionStorage.getItem('globetrotter_user');
+            if (loggedInUser) {
+              setUser(JSON.parse(loggedInUser));
+            }
+            const savedTheme = localStorage.getItem('globetrotter_theme');
+            if (savedTheme) {
+              setIsDarkMode(JSON.parse(savedTheme));
+            }
+          }, []);
+
+          useEffect(() => {
+              localStorage.setItem('globetrotter_theme', JSON.stringify(isDarkMode));
+              if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+              } else {
+                document.documentElement.classList.remove('dark');
+              }
+          }, [isDarkMode]);
+
+          const handleLoginSuccess = (loggedInUser) => {
+            setUser(loggedInUser);
+            sessionStorage.setItem('globetrotter_user', JSON.stringify(loggedInUser));
+            if (!loggedInUser.preferences) {
+                setShowOnboarding(true);
+            } else {
+                setPage('dashboard');
+            }
+          };
+
+          const handleOnboardingComplete = (preferences) => {
+              const updatedUser = { ...user, preferences };
+              setUser(updatedUser);
+              sessionStorage.setItem('globetrotter_user', JSON.stringify(updatedUser));
+              setShowOnboarding(false);
+              setPage('dashboard');
+          };
+
+          const handleLogout = () => {
+            setUser(null);
+            sessionStorage.removeItem('globetrotter_user');
+            setPage('dashboard');
+          };
+
+          if (!user) {
+            return <LoginSignup onLoginSuccess={handleLoginSuccess} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />;
+          }
+          
+          const renderPage = () => {
+            switch (page) {
+              case 'dashboard': return <Dashboard user={user} setPage={setPage} isDarkMode={isDarkMode} />;
+              case 'planner': return <ItineraryPlanner user={user} setPage={setPage} isDarkMode={isDarkMode} />;
+              case 'myTrips': return <MyTrips user={user} setPage={setPage} isDarkMode={isDarkMode} setSelectedTrip={setSelectedTrip} />;
+              case 'community': return <CommunityHub user={user} setPage={setPage} isDarkMode={isDarkMode} />;
+              case 'calendar': return <CalendarPage user={user} isDarkMode={isDarkMode} />;
+              case 'settings': return <SettingsPage user={user} onLogout={handleLogout} isDarkMode={isDarkMode} setUser={setUser} />;
+              case 'admin': return <AdminPanel user={user} isDarkMode={isDarkMode} />;
+              case 'budget': return <BudgetView trip={selectedTrip} setPage={setPage} isDarkMode={isDarkMode} user={user} />;
+              default: return <Dashboard user={user} setPage={setPage} isDarkMode={isDarkMode} />;
+            }
+          };
+
+          const NavItem = ({ icon, label, pageName }) => (
+            <button onClick={() => setPage(pageName)} className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors duration-200 ${page === pageName ? (isDarkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-800') : (isDarkMode ? 'text-slate-400 hover:bg-slate-700 hover:text-white' : 'text-slate-600 hover:bg-slate-200')}`}>
+                {cloneElement(icon, { className: "w-6 h-6 mr-4"})}
+                {isSidebarOpen && <span className="font-semibold">{label}</span>}
+            </button>
+          );
+
+          return (
+            <div className={`${isDarkMode ? 'dark' : ''}`}>
+                <div className={`flex h-screen ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 text-white' : 'bg-gradient-to-br from-gray-50 via-blue-100 to-violet-100 text-slate-800'}`}>
+                    {showOnboarding && <OnboardingQuiz user={user} onComplete={handleOnboardingComplete} isDarkMode={isDarkMode} />}
+                    <aside className={`${isDarkMode ? 'bg-slate-800/70 border-slate-700' : 'bg-white/60 border-slate-200'} backdrop-blur-xl border-r flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+                        <div className={`flex items-center ${isSidebarOpen ? 'justify-between' : 'justify-center'} h-20 px-4 border-b ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                            {isSidebarOpen && <span className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>GlobeTrotter</span>}
+                            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-slate-700' : 'hover:bg-slate-200'}`}>
+                                {isSidebarOpen ? <icons.ChevronLeft/> : <icons.ChevronRight/>}
+                            </button>
+                        </div>
+                        <nav className="flex-1 p-4 space-y-2">
+                            <NavItem icon={<icons.TrendingUp/>} label="Dashboard" pageName="dashboard" />
+                            <NavItem icon={<icons.Plus/>} label="Plan Trip" pageName="planner" />
+                            <NavItem icon={<icons.MapPin/>} label="My Trips" pageName="myTrips" />
+                            <NavItem icon={<icons.Rupee/>} label="Budget" pageName="budget" />
+                            <NavItem icon={<icons.Users/>} label="Community" pageName="community" />
+                            <NavItem icon={<icons.Calendar/>} label="Calendar" pageName="calendar" />
+                        </nav>
+                        <div className={`p-4 border-t ${isDarkMode ? 'border-slate-700' : 'border-slate-200'} space-y-2`}>
+                            <NavItem icon={<icons.Settings/>} label="Settings" pageName="settings" />
+                            <NavItem icon={<icons.Shield/>} label="Admin" pageName="admin" />
+                            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`flex items-center w-full px-4 py-3 rounded-lg transition-colors duration-200 ${isDarkMode ? 'text-slate-400 hover:bg-slate-700 hover:text-white' : 'text-slate-600 hover:bg-slate-200'}`}>
+                                {isDarkMode ? <icons.Sun className="w-6 h-6 mr-4"/> : <icons.Moon className="w-6 h-6 mr-4"/>}
+                                {isSidebarOpen && <span className="font-semibold">Toggle Theme</span>}
+                            </button>
+                            <button onClick={handleLogout} className={`flex items-center w-full px-4 py-3 rounded-lg ${isDarkMode ? 'text-slate-400 hover:bg-slate-700 hover:text-red-500' : 'text-slate-600 hover:bg-slate-200 hover:text-red-500'}`}>
+                                <icons.LogOut className="w-6 h-6 mr-4"/>
+                                {isSidebarOpen && <span className="font-semibold">Logout</span>}
+                            </button>
+                        </div>
+                    </aside>
+                    <main className="flex-1 overflow-y-auto">
+                        <div className="h-full w-full animate-fade-in">
+                            {renderPage()}
+                        </div>
+                    </main>
+                </div>
+            </div>
+          );
+        };
+        
+        // Render the main App component to the DOM
+        ReactDOM.render(<App />, document.getElementById('root'));
+
+    </script>
+</body>
+</html>

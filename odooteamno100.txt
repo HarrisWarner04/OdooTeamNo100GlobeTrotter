@@ -1,0 +1,25 @@
+GlobeTrotter AI: A Fully Automated, AI-Powered Travel Planning Platform
+Our project, GlobeTrotter AI, is a modern, full-stack travel planning application built to solve the complexities of organizing multi-city trips. It leverages the combined power of Odoo, N8N, and Google's Gemini Pro AI to deliver a seamless and intelligent user experience, from ideation to execution.
+
+Core Technology Stack
+Odoo: Utilized as both the central database for storing all trip-related data and as a low-code frontend builder. We used Odoo's native features for user authentication, contact management, and calendar integration.
+
+N8N: The automation engine of our platform. N8N orchestrates all communication between the frontend, Odoo, and the AI models, eliminating the need for complex custom backend code.
+
+Google's Gemini Pro: The artificial intelligence core. Gemini is responsible for generating detailed, structured itineraries from simple user prompts and for conducting automated feasibility reviews.
+
+Key Features & N8N Workflows
+Our solution is powered by a series of interconnected N8N workflows that handle all core functionality:
+
+AI Trip Creation: A webhook receives a user's travel prompt (e.g., destination, budget, interests). Gemini generates a comprehensive JSON itinerary, which N8N then saves to Odoo.
+
+Itinerary Modification: A webhook receives a user's request to modify an existing trip. Gemini receives the old itinerary JSON and the new prompt, generates an updated itinerary, and N8N updates the corresponding record in Odoo.
+
+Community "Copy & Edit": This feature allows a user to "copy" a public trip. A webhook receives the original itinerary and a new prompt, Gemini modifies it, and N8N saves the result as a new trip for the current user in Odoo.
+
+Automated Admin Review: A scheduled N8N workflow runs periodically, pulling newly created trips from Odoo. Gemini performs a feasibility check and N8N automatically updates the trip record with an AI-generated review, providing a self-auditing administrative panel.
+
+Odoo Calendar Integration: After a trip is created, a dedicated N8N workflow parses the itinerary JSON and automatically creates calendar events in Odoo's native calendar, providing a visual overview of the journey.
+
+Future Scope: Immersive VR Experience
+Looking ahead, we plan to introduce an Immersive VR Experience to allow users to virtually explore their planned destinations. This feature will be powered by a dedicated N8N workflow using Gemini Pro Vision to discover and embed VR content (e.g., 360° virtual tours) directly into the itinerary view. Users will be able to navigate these experiences using VR controllers and VR boxes, enhancing the planning process with a truly interactive and engaging layer of virtual exploration. This approach demonstrates a commitment to innovation and showcases the platform's potential for future growth.
